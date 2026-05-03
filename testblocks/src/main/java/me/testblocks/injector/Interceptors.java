@@ -10,8 +10,14 @@ import net.bytebuddy.implementation.bind.annotation.This;
 import java.util.concurrent.Callable;
 import java.util.List;
 
+/**
+ * The bridge between Minecraft NMS and our Custom Java API.
+ */
 public class Interceptors {
 
+    /**
+     * Intercepts getShape to allow custom hitboxes.
+     */
     public static class GetShapeInterceptor {
         @RuntimeType
         public static Object intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<Object> superMethod) throws Exception {
@@ -24,6 +30,9 @@ public class Interceptors {
         }
     }
 
+    /**
+     * Intercepts interactions (right-clicks).
+     */
     public static class UseInterceptor {
         @RuntimeType
         public static Object intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<Object> superMethod) throws Exception {
@@ -58,6 +67,9 @@ public class Interceptors {
         }
     }
 
+    /**
+     * Intercepts drops (loot tables).
+     */
     public static class GetDropsInterceptor {
         @RuntimeType
         public static List<Object> intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<List<Object>> superMethod) throws Exception {
@@ -70,6 +82,9 @@ public class Interceptors {
         }
     }
 
+    /**
+     * Intercepts block sounds (break, place, step, hit).
+     */
     public static class GetSoundTypeInterceptor {
         @RuntimeType
         public static Object intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<Object> superMethod) throws Exception {
@@ -82,28 +97,9 @@ public class Interceptors {
         }
     }
 
-    public static class TickInterceptor {
-        @RuntimeType
-        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
-            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
-            if (behavior instanceof BlockBehavior) {
-                ((BlockBehavior) behavior).tick(args[0], args[1], args[2], args[3]);
-            }
-            superMethod.run();
-        }
-    }
-
-    public static class RandomTickInterceptor {
-        @RuntimeType
-        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
-            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
-            if (behavior instanceof BlockBehavior) {
-                ((BlockBehavior) behavior).randomTick(args[0], args[1], args[2], args[3]);
-            }
-            superMethod.run();
-        }
-    }
-
+    /**
+     * Intercepts Physics (Friction, Speed, Jump).
+     */
     public static class PhysicsInterceptor {
         @RuntimeType
         public static float getFriction(@This Object thisObj, @SuperCall Callable<Float> superMethod) throws Exception {
@@ -127,6 +123,28 @@ public class Interceptors {
         public static float getSpeedFactor(@This Object thisObj, @SuperCall Callable<Float> superMethod) throws Exception {
             Object behavior = ((DelegatingBlock) thisObj).getBehavior();
             return (behavior instanceof BlockBehavior) ? ((BlockBehavior) behavior).getSpeedFactor() : superMethod.call();
+        }
+    }
+
+    public static class TickInterceptor {
+        @RuntimeType
+        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                ((BlockBehavior) behavior).tick(args[0], args[1], args[2], args[3]);
+            }
+            superMethod.run();
+        }
+    }
+
+    public static class RandomTickInterceptor {
+        @RuntimeType
+        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                ((BlockBehavior) behavior).randomTick(args[0], args[1], args[2], args[3]);
+            }
+            superMethod.run();
         }
     }
 }

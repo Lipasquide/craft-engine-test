@@ -2,14 +2,9 @@ package me.testblocks;
 
 import me.testblocks.api.BlockBehavior;
 import me.testblocks.api.DelegatingBlock;
-import me.testblocks.behavior.CustomDropBehavior;
-import me.testblocks.behavior.CustomShapeBehavior;
-import me.testblocks.behavior.FurnitureBehavior;
-import me.testblocks.behavior.PhysicsBlockBehavior;
-import me.testblocks.behavior.ComplexShapeBehavior;
+import me.testblocks.behavior.*;
 import me.testblocks.injector.Interceptors;
 import me.testblocks.network.PacketInterceptor;
-import me.testblocks.network.VisualMappingManager;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.ClassFileVersion;
 import net.bytebuddy.description.modifier.Visibility;
@@ -42,10 +37,11 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
 
     private static Class<?> generatedBlockClass;
     private final Map<String, Object> registeredItems = new HashMap<>();
+    private final Map<Integer, Integer> visualMapping = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
-        getLogger().info("Standalone TestBlocks (GOD MODE Level 999) is initializing...");
+        getLogger().info("Standalone TestBlocks (FINAL MASTERPIECE) is initializing...");
 
         try {
             Class<?> blockClass = Class.forName("net.minecraft.world.level.block.Block");
@@ -60,9 +56,8 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
             Class<?> blockHitResultClass = Class.forName("net.minecraft.world.phys.BlockHitResult");
             Class<?> lootParamsBuilderClass = Class.forName("net.minecraft.world.level.storage.loot.LootParams$Builder");
             Class<?> randomSourceClass = Class.forName("net.minecraft.util.RandomSource");
-            Class<?> soundTypeClass = Class.forName("net.minecraft.world.level.block.SoundType");
 
-            // Define methods to intercept
+            // Define all methods to intercept (The "Voodoo" bridge)
             Method getShapeMethod = blockBehaviourClass.getDeclaredMethod("getShape",
                 blockStateClass, blockGetterClass, blockPosClass, collisionContextClass);
             Method useMethod = blockBehaviourClass.getDeclaredMethod("useWithoutItem",
@@ -80,13 +75,13 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
             Method randomTickMethod = blockBehaviourClass.getDeclaredMethod("randomTick",
                 blockStateClass, serverLevelClass, blockPosClass, randomSourceClass);
 
-            // Physics
+            // Physics Methods
             Method getFrictionMethod = blockClass.getDeclaredMethod("getFriction");
             Method getExplosionResistanceMethod = blockClass.getDeclaredMethod("getExplosionResistance");
             Method getSpeedFactorMethod = blockClass.getDeclaredMethod("getSpeedFactor");
             Method getJumpFactorMethod = blockClass.getDeclaredMethod("getJumpFactor");
 
-            // GOD MODE Level 999 GENERATOR
+            // ByteBuddy Magic: Create a real NMS Block at runtime
             generatedBlockClass = new ByteBuddy(ClassFileVersion.JAVA_V17)
                     .subclass(blockClass, ConstructorStrategy.Default.IMITATE_SUPER_CLASS_OPENING)
                     .name("me.testblocks.injector.TestCustomBlock")
@@ -110,33 +105,39 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                     .load(getClass().getClassLoader())
                     .getLoaded();
 
-            // Register blocks
-            registerBlock("test:cube", null);
+            // --- Register MASTERPIECE blocks ---
 
-            Class<?> shapesClass = Class.forName("net.minecraft.world.phys.shapes.Shapes");
-            Method boxMethod = shapesClass.getMethod("box", double.class, double.class, double.class, double.class, double.class, double.class);
-            Object slabShape = boxMethod.invoke(null, 0, 0, 0, 16, 8, 16);
-            registerBlock("test:slab", new CustomShapeBehavior(slabShape));
+            // 1. Ruby Ore (Custom drops Diamond, Custom Stone sounds)
+            Class<?> itemsClass = Class.forName("net.minecraft.world.item.Items");
+            Object rubyDrop = itemsClass.getField("DIAMOND").get(null);
+            registerBlock("test:ruby_ore", new CustomDropBehavior(rubyDrop));
 
-            // Complex Shaped Block (Fence-like)
-            Object fenceShape = boxMethod.invoke(null, 6, 0, 6, 10, 16, 10);
-            Object woodSound = soundTypeClass.getField("WOOD").get(null);
-            registerBlock("test:post", new ComplexShapeBehavior(fenceShape, woodSound));
+            // 2. Heavy Vault (High explosion resistance)
+            registerBlock("test:heavy_vault", new PhysicsBlockBehavior(0.6f, 1.0f, 1.0f) {
+                @Override
+                public float getExplosionResistance() { return 1200.0f; }
+            });
+
+            // 3. Thorns (Wall shape, custom texture slot simulation)
+            registerBlock("test:thorns", ShapeFactory.wall());
+
+            // 4. Ghost Block (Pass-through shape)
+            registerBlock("test:ghost", new CustomShapeBehavior(ShapeFactory.createBox(0,0,0,0,0,0)));
 
             getCommand("testblocks").setExecutor(this);
             Bukkit.getPluginManager().registerEvents(this, this);
 
         } catch (Exception e) {
-            getLogger().severe("Initialization failed: " + e.getMessage());
+            getLogger().severe("Final Initialization failed: " + e.getMessage());
             e.printStackTrace();
         }
 
-        getLogger().info("GOD MODE Level 999 Standalone TestBlocks initialized!");
+        getLogger().info("FINAL MASTERPIECE Standalone TestBlocks initialized!");
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        PacketInterceptor.inject(event.getPlayer(), null);
+        PacketInterceptor.inject(event.getPlayer(), visualMapping);
     }
 
     private void registerBlock(String id, BlockBehavior behavior) throws Exception {
@@ -246,7 +247,7 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
 
                 ItemStack bukkitStack = (ItemStack) asBukkitCopyMethod.invoke(null, nmsItemStack);
                 player.getInventory().addItem(bukkitStack);
-                player.sendMessage("Gave " + id);
+                player.sendMessage("§aGave " + id);
             } catch (Exception e) {
                 player.sendMessage("Error: " + e.getMessage());
                 e.printStackTrace();

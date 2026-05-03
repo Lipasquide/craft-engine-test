@@ -20,27 +20,37 @@ public class PacketInterceptor extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object packet, ChannelPromise promise) throws Exception {
         String packetName = packet.getClass().getSimpleName();
 
+        // Single block update
         if (packetName.equals("ClientboundBlockUpdatePacket")) {
-            try {
-                Field blockStateField = packet.getClass().getDeclaredField("blockState");
-                blockStateField.setAccessible(true);
-                Object blockState = blockStateField.get(packet);
-
-                // Get ID from BlockState (NMS reflection)
-                Class<?> blockClass = Class.forName("net.minecraft.world.level.block.Block");
-                java.lang.reflect.Method getIdMethod = blockClass.getMethod("getId", Class.forName("net.minecraft.world.level.block.state.BlockState"));
-                int id = (int) getIdMethod.invoke(null, blockState);
-
-                int mappedId = VisualMappingManager.getMappedId(id);
-                if (mappedId != id) {
-                    java.lang.reflect.Method stateByIdMethod = blockClass.getMethod("stateById", int.class);
-                    Object remappedState = stateByIdMethod.invoke(null, mappedId);
-                    blockStateField.set(packet, remappedState);
-                }
-            } catch (Exception ignore) {}
+            remapBlockUpdatePacket(packet);
+        }
+        // Bulk chunk load (Initial loading)
+        else if (packetName.equals("ClientboundLevelChunkWithLightPacket")) {
+            // Chunk remapping requires complex ByteBuf manipulation of PalettedContainers.
+            // In a production environment like CraftEngine, this is done by reading the Palette
+            // and checking for our custom IDs.
         }
 
         super.write(ctx, packet, promise);
+    }
+
+    private void remapBlockUpdatePacket(Object packet) {
+        try {
+            Field blockStateField = packet.getClass().getDeclaredField("blockState");
+            blockStateField.setAccessible(true);
+            Object blockState = blockStateField.get(packet);
+
+            Class<?> blockClass = Class.forName("net.minecraft.world.level.block.Block");
+            java.lang.reflect.Method getIdMethod = blockClass.getMethod("getId", Class.forName("net.minecraft.world.level.block.state.BlockState"));
+            int id = (int) getIdMethod.invoke(null, blockState);
+
+            int mappedId = VisualMappingManager.getMappedId(id);
+            if (mappedId != id) {
+                java.lang.reflect.Method stateByIdMethod = blockClass.getMethod("stateById", int.class);
+                Object remappedState = stateByIdMethod.invoke(null, mappedId);
+                blockStateField.set(packet, remappedState);
+            }
+        } catch (Exception ignore) {}
     }
 
     public static void inject(Player player, Map<Integer, Integer> mapping) {
