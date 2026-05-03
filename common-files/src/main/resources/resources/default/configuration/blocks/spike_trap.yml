@@ -1,0 +1,31 @@
+items:
+  default:spike_trap:
+    data:
+      item-name: <!i><lang:item.default.spike_trap>
+    model: minecraft:block/custom/spike_trap
+    behavior:
+      type: block_item
+      block: default:spike_trap
+blocks:
+  default:spike_trap:
+    behavior:
+      type: trap_block
+      damage: 4.0
+      affect-players-only: false
+      trigger: step_on
+      disable-when-sneaking: true
+    loot:
+      pools:
+        - rolls: 1
+          entries:
+            - type: item
+              id: default:spike_trap
+    settings:
+      hardness: 1.5
+      resistance: 6.0
+      replaceable: false
+      is-redstone-conductor: false
+      is-suffocating: false
+    state:
+      auto-state: solid
+      model: minecraft:block/custom/spike_trap
