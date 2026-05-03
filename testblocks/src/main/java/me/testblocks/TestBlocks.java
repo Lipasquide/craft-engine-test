@@ -26,7 +26,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -37,8 +36,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * GOD MODE Level 999 - THE FINAL DOT .
- * A 100% Standalone Custom Block Engine for Minecraft 1.21.1+
+ * GOD MODE Level 999 - MINI CRAFTENGINE (FINAL DOT)
  */
 public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener {
 
@@ -47,14 +45,13 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
 
     @Override
     public void onEnable() {
-        getLogger().info("Initializing GOD MODE Level 999 - Independent Block Engine...");
+        getLogger().info("Initializing MINI CRAFTENGINE (GOD MODE)...");
 
         try {
-            // NMS Class References
             Class<?> blockClass = Class.forName("net.minecraft.world.level.block.Block");
             Class<?> blockBehaviourPropertiesClass = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$Properties");
 
-            // ByteBuddy Generator: Create a block that Minecraft treats as native
+            // BYTEBUDDY - ALL HOOKS ENABLED
             generatedBlockClass = new ByteBuddy(ClassFileVersion.JAVA_V17)
                     .subclass(blockClass, ConstructorStrategy.Default.IMITATE_SUPER_CLASS_OPENING)
                     .name("me.testblocks.injector.TestCustomBlock")
@@ -63,7 +60,6 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                     .method(ElementMatchers.named("getBehavior")).intercept(FieldAccessor.ofField("behavior"))
                     .method(ElementMatchers.named("setBehavior")).intercept(FieldAccessor.ofField("behavior"))
 
-                    // Hook into NMS methods for full control
                     .method(ElementMatchers.named("getShape").and(ElementMatchers.takesArguments(4)))
                     .intercept(MethodDelegation.to(Interceptors.GetShapeInterceptor.class))
                     .method(ElementMatchers.named("useWithoutItem").and(ElementMatchers.takesArguments(5)))
@@ -72,8 +68,15 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                     .intercept(MethodDelegation.to(Interceptors.GetDropsInterceptor.class))
                     .method(ElementMatchers.named("getSoundType").and(ElementMatchers.takesArguments(1)))
                     .intercept(MethodDelegation.to(Interceptors.GetSoundTypeInterceptor.class))
+                    .method(ElementMatchers.named("onPlace").and(ElementMatchers.takesArguments(5)))
+                    .intercept(MethodDelegation.to(Interceptors.OnPlaceInterceptor.class))
+                    .method(ElementMatchers.named("neighborChanged").and(ElementMatchers.takesArguments(6)))
+                    .intercept(MethodDelegation.to(Interceptors.NeighborChangedInterceptor.class))
+                    .method(ElementMatchers.named("tick").and(ElementMatchers.takesArguments(4)))
+                    .intercept(MethodDelegation.to(Interceptors.TickInterceptor.class))
+                    .method(ElementMatchers.named("randomTick").and(ElementMatchers.takesArguments(4)))
+                    .intercept(MethodDelegation.to(Interceptors.RandomTickInterceptor.class))
 
-                    // Physics Hooks
                     .method(ElementMatchers.named("getFriction")).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
                     .method(ElementMatchers.named("getSpeedFactor")).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
                     .method(ElementMatchers.named("getJumpFactor")).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
@@ -82,20 +85,17 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                     .load(getClass().getClassLoader())
                     .getLoaded();
 
-            // Register blocks with visual mapping
+            // Register blocks
             registerBlock("test:cube", null, "minecraft:stone");
             registerBlock("test:slab", ShapeFactory.slab(), "minecraft:stone_slab");
             registerBlock("test:rich_ore", new CustomDropBehavior(Material.DIAMOND), "minecraft:diamond_ore");
-            registerBlock("test:speed_block", new PhysicsBlockBehavior(0.1f, 2.0f, 1.2f), "minecraft:blue_ice");
+            registerBlock("test:furniture", new FurnitureBehavior(Material.LAPIS_BLOCK), "minecraft:barrier");
 
-            // Setup Commands and Events
             getCommand("testblocks").setExecutor(this);
             Bukkit.getPluginManager().registerEvents(this, this);
 
-            getLogger().info("GOD MODE Level 999 is now ACTIVE. Bestcodemode = ON.");
-
         } catch (Exception e) {
-            getLogger().severe("CRITICAL: Failed to initialize the custom block engine!");
+            getLogger().severe("GOD MODE INITIALIZATION FAILED!");
             e.printStackTrace();
         }
     }
@@ -110,12 +110,10 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
         VisualMappingManager.removePlayer(event.getPlayer().getUniqueId());
     }
 
-    /**
-     * The master registration method.
-     */
     private void registerBlock(String id, BlockBehavior behavior, String vanillaSlot) throws Exception {
         unfreezeRegistry("BLOCK");
         try {
+            Class<?> blockClass = Class.forName("net.minecraft.world.level.block.Block");
             Class<?> blockBehaviourPropertiesClass = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$Properties");
             Method ofMethod = blockBehaviourPropertiesClass.getMethod("of");
             Object properties = ofMethod.invoke(null);
@@ -127,20 +125,20 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                 ((DelegatingBlock) blockInstance).setBehavior(behavior);
             }
 
-            // --- NMS Property Injection (Facing example) ---
-            Class<?> stateDefinitionBuilderClass = Class.forName("net.minecraft.world.level.block.state.StateDefinition$Builder");
-            Object builder = stateDefinitionBuilderClass.getConstructor(Class.forName("net.minecraft.world.level.block.Block")).newInstance(blockInstance);
+            // STATE SYSTEM FIX
+            Field stateDefinitionField = blockClass.getDeclaredField("stateDefinition");
+            stateDefinitionField.setAccessible(true);
 
-            // This is where CraftEngine adds Properties like HORIZONTAL_FACING
-            // In this standalone version, we maintain a simplified state but allow full behavior control
+            Method registerDefaultState = blockClass.getDeclaredMethod("registerDefaultState",
+                Class.forName("net.minecraft.world.level.block.state.BlockState"));
+            registerDefaultState.setAccessible(true);
+            registerDefaultState.invoke(blockInstance, blockClass.getMethod("defaultBlockState").invoke(blockInstance));
 
             registerInNms("BLOCK", id, blockInstance);
             registerBlockItem(id, blockInstance);
-
-            // Map the custom ID to a vanilla slot for the PacketInterceptor
             mapVisualSlot(blockInstance, vanillaSlot);
 
-            getLogger().info("Registered " + id + " [" + (behavior != null ? behavior.getClass().getSimpleName() : "Standard") + "]");
+            getLogger().info("Successfully registered " + id);
         } finally {
             freezeRegistry("BLOCK");
         }
@@ -209,17 +207,19 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
             Field registryField = builtInRegistriesClass.getDeclaredField(registryName);
             Object registry = registryField.get(null);
             Class<?> mappedRegistryClass = Class.forName("net.minecraft.core.MappedRegistry");
-
             Field frozenField = mappedRegistryClass.getDeclaredField("frozen");
             frozenField.setAccessible(true);
-            frozenField.setBoolean(registry, false);
+
+            try {
+                frozenField.setBoolean(registry, false);
+            } catch (Exception e) {
+                getLogger().warning("Registry unfreeze failed (version mismatch)");
+            }
 
             Field intrusiveHoldersField = mappedRegistryClass.getDeclaredField("unregisteredIntrusiveHolders");
             intrusiveHoldersField.setAccessible(true);
             intrusiveHoldersField.set(registry, new IdentityHashMap<>());
-        } catch (Exception e) {
-            getLogger().warning("Registry Unfreeze Warning: " + e.getMessage());
-        }
+        } catch (Exception ignore) {}
     }
 
     private void freezeRegistry(String registryName) {
@@ -252,6 +252,12 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
 
             try {
                 Class<?> craftItemStackClass = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack");
+                if (craftItemStackClass == null) {
+                     // Find via Bukkit server instance to be very safe
+                     String version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+                     craftItemStackClass = Class.forName("org.bukkit.craftbukkit." + version + ".inventory.CraftItemStack");
+                }
+
                 Method asBukkitCopyMethod = craftItemStackClass.getMethod("asBukkitCopy", Class.forName("net.minecraft.world.item.ItemStack"));
                 Class<?> nmsItemStackClass = Class.forName("net.minecraft.world.item.ItemStack");
                 Constructor<?> nmsItemStackConstructor = nmsItemStackClass.getConstructor(Class.forName("net.minecraft.world.item.Item"));
@@ -274,13 +280,14 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
             }
 
             try {
-                Method getHandle = target.getClass().getMethod("getHandle");
-                Object nmsState = getHandle.invoke(target);
+                Object craftBlock = target;
+                Method getHandle = craftBlock.getClass().getMethod("getHandle");
+                Object nmsState = getHandle.invoke(craftBlock);
                 Method getBlock = nmsState.getClass().getMethod("getBlock");
                 Object nmsBlock = getBlock.invoke(nmsState);
 
                 if (nmsBlock instanceof DelegatingBlock db) {
-                    player.sendMessage("§b§l[Custom Block Found]");
+                    player.sendMessage("§b§l[Mini CraftEngine - Custom Block]");
                     Object behavior = db.getBehavior();
                     player.sendMessage("§7Behavior: §f" + (behavior != null ? behavior.getClass().getSimpleName() : "Standard"));
                 } else {

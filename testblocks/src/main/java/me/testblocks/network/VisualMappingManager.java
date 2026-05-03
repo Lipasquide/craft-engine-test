@@ -13,9 +13,8 @@ public class VisualMappingManager {
     }
 
     public static int get(UUID player, int id) {
-        if (player != null && perPlayer.containsKey(player)) {
-            return perPlayer.get(player).getOrDefault(id, id);
-        }
+        Map<Integer, Integer> map = perPlayer.get(player);
+        if (map != null && map.containsKey(id)) return map.get(id);
         return global.getOrDefault(id, id);
     }
 

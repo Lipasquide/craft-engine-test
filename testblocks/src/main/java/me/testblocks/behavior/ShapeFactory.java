@@ -12,15 +12,18 @@ public class ShapeFactory {
             Class<?> shapesClass = Class.forName("net.minecraft.world.phys.shapes.Shapes");
             boxMethod = shapesClass.getMethod("box", double.class, double.class, double.class, double.class, double.class, double.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[TestBlocks] CRITICAL: Shapes.box method not found! Version mismatch?");
         }
     }
 
     public static Object createBox(double x1, double y1, double z1, double x2, double y2, double z2) {
+        if (boxMethod == null) {
+            throw new IllegalStateException("Shapes.box method not found");
+        }
         try {
             return boxMethod.invoke(null, x1, y1, z1, x2, y2, z2);
         } catch (Exception e) {
-            return null;
+            throw new RuntimeException("Failed to create NMS box", e);
         }
     }
 
