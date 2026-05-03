@@ -1,0 +1,7 @@
+name: TestBlocks
+version: 1.0
+main: me.testblocks.TestBlocks
+api-version: '1.21'
+commands:
+  testblocks:
+    description: Custom block commands
