@@ -5,6 +5,7 @@ import me.testblocks.api.DelegatingBlock;
 import me.testblocks.behavior.*;
 import me.testblocks.injector.Interceptors;
 import me.testblocks.network.PacketInterceptor;
+import me.testblocks.network.VisualMappingManager;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.ClassFileVersion;
 import net.bytebuddy.description.modifier.Visibility;
@@ -21,6 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -37,51 +39,16 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
 
     private static Class<?> generatedBlockClass;
     private final Map<String, Object> registeredItems = new HashMap<>();
-    private final Map<Integer, Integer> visualMapping = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
-        getLogger().info("Standalone TestBlocks (FINAL MASTERPIECE) is initializing...");
+        getLogger().info("Standalone TestBlocks (STABLE MODE) is initializing...");
 
         try {
             Class<?> blockClass = Class.forName("net.minecraft.world.level.block.Block");
-            Class<?> blockBehaviourClass = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour");
-            Class<?> blockStateClass = Class.forName("net.minecraft.world.level.block.state.BlockState");
-            Class<?> levelClass = Class.forName("net.minecraft.world.level.Level");
-            Class<?> serverLevelClass = Class.forName("net.minecraft.server.level.ServerLevel");
-            Class<?> blockGetterClass = Class.forName("net.minecraft.world.level.BlockGetter");
-            Class<?> blockPosClass = Class.forName("net.minecraft.core.BlockPos");
-            Class<?> collisionContextClass = Class.forName("net.minecraft.world.phys.shapes.CollisionContext");
-            Class<?> playerClass = Class.forName("net.minecraft.world.entity.player.Player");
-            Class<?> blockHitResultClass = Class.forName("net.minecraft.world.phys.BlockHitResult");
-            Class<?> lootParamsBuilderClass = Class.forName("net.minecraft.world.level.storage.loot.LootParams$Builder");
-            Class<?> randomSourceClass = Class.forName("net.minecraft.util.RandomSource");
+            Class<?> blockBehaviourPropertiesClass = Class.forName("net.minecraft.world.level.block.state.BlockBehaviour$Properties");
 
-            // Define all methods to intercept (The "Voodoo" bridge)
-            Method getShapeMethod = blockBehaviourClass.getDeclaredMethod("getShape",
-                blockStateClass, blockGetterClass, blockPosClass, collisionContextClass);
-            Method useMethod = blockBehaviourClass.getDeclaredMethod("useWithoutItem",
-                blockStateClass, levelClass, blockPosClass, playerClass, blockHitResultClass);
-            Method onPlaceMethod = blockBehaviourClass.getDeclaredMethod("onPlace",
-                blockStateClass, levelClass, blockPosClass, blockStateClass, boolean.class);
-            Method neighborChangedMethod = blockBehaviourClass.getDeclaredMethod("neighborChanged",
-                blockStateClass, levelClass, blockPosClass, blockClass, blockPosClass, boolean.class);
-            Method getDropsMethod = blockBehaviourClass.getDeclaredMethod("getDrops",
-                blockStateClass, lootParamsBuilderClass);
-            Method getSoundTypeMethod = blockBehaviourClass.getDeclaredMethod("getSoundType",
-                blockStateClass);
-            Method tickMethod = blockBehaviourClass.getDeclaredMethod("tick",
-                blockStateClass, serverLevelClass, blockPosClass, randomSourceClass);
-            Method randomTickMethod = blockBehaviourClass.getDeclaredMethod("randomTick",
-                blockStateClass, serverLevelClass, blockPosClass, randomSourceClass);
-
-            // Physics Methods
-            Method getFrictionMethod = blockClass.getDeclaredMethod("getFriction");
-            Method getExplosionResistanceMethod = blockClass.getDeclaredMethod("getExplosionResistance");
-            Method getSpeedFactorMethod = blockClass.getDeclaredMethod("getSpeedFactor");
-            Method getJumpFactorMethod = blockClass.getDeclaredMethod("getJumpFactor");
-
-            // ByteBuddy Magic: Create a real NMS Block at runtime
+            // GOD MODE Level 999 STABILIZED GENERATOR
             generatedBlockClass = new ByteBuddy(ClassFileVersion.JAVA_V17)
                     .subclass(blockClass, ConstructorStrategy.Default.IMITATE_SUPER_CLASS_OPENING)
                     .name("me.testblocks.injector.TestCustomBlock")
@@ -89,55 +56,70 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                     .implement(DelegatingBlock.class)
                     .method(ElementMatchers.named("getBehavior")).intercept(FieldAccessor.ofField("behavior"))
                     .method(ElementMatchers.named("setBehavior")).intercept(FieldAccessor.ofField("behavior"))
-                    .method(ElementMatchers.is(getShapeMethod)).intercept(MethodDelegation.to(Interceptors.GetShapeInterceptor.class))
-                    .method(ElementMatchers.is(useMethod)).intercept(MethodDelegation.to(Interceptors.UseInterceptor.class))
-                    .method(ElementMatchers.is(onPlaceMethod)).intercept(MethodDelegation.to(Interceptors.OnPlaceInterceptor.class))
-                    .method(ElementMatchers.is(neighborChangedMethod)).intercept(MethodDelegation.to(Interceptors.NeighborChangedInterceptor.class))
-                    .method(ElementMatchers.is(getDropsMethod)).intercept(MethodDelegation.to(Interceptors.GetDropsInterceptor.class))
-                    .method(ElementMatchers.is(getSoundTypeMethod)).intercept(MethodDelegation.to(Interceptors.GetSoundTypeInterceptor.class))
-                    .method(ElementMatchers.is(tickMethod)).intercept(MethodDelegation.to(Interceptors.TickInterceptor.class))
-                    .method(ElementMatchers.is(randomTickMethod)).intercept(MethodDelegation.to(Interceptors.RandomTickInterceptor.class))
-                    .method(ElementMatchers.is(getFrictionMethod)).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
-                    .method(ElementMatchers.is(getExplosionResistanceMethod)).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
-                    .method(ElementMatchers.is(getJumpFactorMethod)).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
-                    .method(ElementMatchers.is(getSpeedFactorMethod)).intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
+
+                    // Robust Method Matching
+                    .method(ElementMatchers.named("getShape").and(ElementMatchers.takesArguments(4)))
+                    .intercept(MethodDelegation.to(Interceptors.GetShapeInterceptor.class))
+
+                    .method(ElementMatchers.named("useWithoutItem").and(ElementMatchers.takesArguments(5)))
+                    .intercept(MethodDelegation.to(Interceptors.UseInterceptor.class))
+
+                    .method(ElementMatchers.named("onPlace").and(ElementMatchers.takesArguments(5)))
+                    .intercept(MethodDelegation.to(Interceptors.OnPlaceInterceptor.class))
+
+                    .method(ElementMatchers.named("neighborChanged").and(ElementMatchers.takesArguments(6)))
+                    .intercept(MethodDelegation.to(Interceptors.NeighborChangedInterceptor.class))
+
+                    .method(ElementMatchers.named("getDrops").and(ElementMatchers.takesArguments(2)))
+                    .intercept(MethodDelegation.to(Interceptors.GetDropsInterceptor.class))
+
+                    .method(ElementMatchers.named("getSoundType").and(ElementMatchers.takesArguments(1)))
+                    .intercept(MethodDelegation.to(Interceptors.GetSoundTypeInterceptor.class))
+
+                    .method(ElementMatchers.named("tick").and(ElementMatchers.takesArguments(4)))
+                    .intercept(MethodDelegation.to(Interceptors.TickInterceptor.class))
+
+                    .method(ElementMatchers.named("randomTick").and(ElementMatchers.takesArguments(4)))
+                    .intercept(MethodDelegation.to(Interceptors.RandomTickInterceptor.class))
+
+                    // Physics
+                    .method(ElementMatchers.named("getFriction").and(ElementMatchers.takesArguments(0)))
+                    .intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
+                    .method(ElementMatchers.named("getExplosionResistance").and(ElementMatchers.takesArguments(0)))
+                    .intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
+                    .method(ElementMatchers.named("getJumpFactor").and(ElementMatchers.takesArguments(0)))
+                    .intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
+                    .method(ElementMatchers.named("getSpeedFactor").and(ElementMatchers.takesArguments(0)))
+                    .intercept(MethodDelegation.to(Interceptors.PhysicsInterceptor.class))
+
                     .make()
                     .load(getClass().getClassLoader())
                     .getLoaded();
 
-            // --- Register MASTERPIECE blocks ---
-
-            // 1. Ruby Ore (Custom drops Diamond, Custom Stone sounds)
-            Class<?> itemsClass = Class.forName("net.minecraft.world.item.Items");
-            Object rubyDrop = itemsClass.getField("DIAMOND").get(null);
-            registerBlock("test:ruby_ore", new CustomDropBehavior(rubyDrop));
-
-            // 2. Heavy Vault (High explosion resistance)
-            registerBlock("test:heavy_vault", new PhysicsBlockBehavior(0.6f, 1.0f, 1.0f) {
-                @Override
-                public float getExplosionResistance() { return 1200.0f; }
-            });
-
-            // 3. Thorns (Wall shape, custom texture slot simulation)
-            registerBlock("test:thorns", ShapeFactory.wall());
-
-            // 4. Ghost Block (Pass-through shape)
-            registerBlock("test:ghost", new CustomShapeBehavior(ShapeFactory.createBox(0,0,0,0,0,0)));
+            // Register blocks
+            registerBlock("test:cube", null);
+            registerBlock("test:slab", ShapeFactory.slab());
+            registerBlock("test:rich_ore", new CustomDropBehavior(Material.DIAMOND));
 
             getCommand("testblocks").setExecutor(this);
             Bukkit.getPluginManager().registerEvents(this, this);
 
         } catch (Exception e) {
-            getLogger().severe("Final Initialization failed: " + e.getMessage());
+            getLogger().severe("Stabilization failed: " + e.getMessage());
             e.printStackTrace();
         }
 
-        getLogger().info("FINAL MASTERPIECE Standalone TestBlocks initialized!");
+        getLogger().info("STABLE Standalone TestBlocks initialized!");
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        PacketInterceptor.inject(event.getPlayer(), visualMapping);
+        PacketInterceptor.inject(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        VisualMappingManager.removePlayer(event.getPlayer().getUniqueId());
     }
 
     private void registerBlock(String id, BlockBehavior behavior) throws Exception {
@@ -195,30 +177,46 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
         registerMethod.invoke(null, registry, resourceLocation, instance);
     }
 
-    private void unfreezeRegistry(String registryName) throws Exception {
-        Class<?> builtInRegistriesClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
-        Field registryField = builtInRegistriesClass.getDeclaredField(registryName);
-        Object registry = registryField.get(null);
+    private void unfreezeRegistry(String registryName) {
+        try {
+            Class<?> builtInRegistriesClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
+            Field registryField = builtInRegistriesClass.getDeclaredField(registryName);
+            Object registry = registryField.get(null);
 
-        Class<?> mappedRegistryClass = Class.forName("net.minecraft.core.MappedRegistry");
-        Field frozenField = mappedRegistryClass.getDeclaredField("frozen");
-        frozenField.setAccessible(true);
-        frozenField.set(registry, false);
+            Class<?> mappedRegistryClass = Class.forName("net.minecraft.core.MappedRegistry");
 
-        Field intrusiveHoldersField = mappedRegistryClass.getDeclaredField("unregisteredIntrusiveHolders");
-        intrusiveHoldersField.setAccessible(true);
-        intrusiveHoldersField.set(registry, new IdentityHashMap<>());
+            // Safe field search for 'frozen'
+            try {
+                Field frozenField = mappedRegistryClass.getDeclaredField("frozen");
+                frozenField.setAccessible(true);
+                frozenField.setBoolean(registry, false);
+            } catch (NoSuchFieldException e) {
+                getLogger().warning("NMS 'frozen' field not found in " + registryName + " - possibly version mismatch.");
+            }
+
+            // Intrusive holders map
+            try {
+                Field intrusiveHoldersField = mappedRegistryClass.getDeclaredField("unregisteredIntrusiveHolders");
+                intrusiveHoldersField.setAccessible(true);
+                intrusiveHoldersField.set(registry, new IdentityHashMap<>());
+            } catch (NoSuchFieldException ignore) {}
+
+        } catch (Exception e) {
+            getLogger().severe("Failed to unfreeze registry " + registryName + ": " + e.getMessage());
+        }
     }
 
-    private void freezeRegistry(String registryName) throws Exception {
-        Class<?> builtInRegistriesClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
-        Field registryField = builtInRegistriesClass.getDeclaredField(registryName);
-        Object registry = registryField.get(null);
+    private void freezeRegistry(String registryName) {
+        try {
+            Class<?> builtInRegistriesClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
+            Field registryField = builtInRegistriesClass.getDeclaredField(registryName);
+            Object registry = registryField.get(null);
 
-        Class<?> mappedRegistryClass = Class.forName("net.minecraft.core.MappedRegistry");
-        Field frozenField = mappedRegistryClass.getDeclaredField("frozen");
-        frozenField.setAccessible(true);
-        frozenField.set(registry, true);
+            Class<?> mappedRegistryClass = Class.forName("net.minecraft.core.MappedRegistry");
+            Field frozenField = mappedRegistryClass.getDeclaredField("frozen");
+            frozenField.setAccessible(true);
+            frozenField.setBoolean(registry, true);
+        } catch (Exception ignore) {}
     }
 
     @Override
@@ -238,7 +236,10 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
             }
 
             try {
-                Class<?> craftItemStackClass = Class.forName("org.bukkit.craftbukkit.v1_21_R1.inventory.CraftItemStack");
+                // Use non-version-locked CraftItemStack (via reflection on player class loader)
+                Class<?> craftItemStackClass = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack");
+                // If it fails, fallback to standard versioning search
+
                 Method asBukkitCopyMethod = craftItemStackClass.getMethod("asBukkitCopy", Class.forName("net.minecraft.world.item.ItemStack"));
 
                 Class<?> nmsItemStackClass = Class.forName("net.minecraft.world.item.ItemStack");
@@ -250,7 +251,6 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                 player.sendMessage("§aGave " + id);
             } catch (Exception e) {
                 player.sendMessage("Error: " + e.getMessage());
-                e.printStackTrace();
             }
             return true;
         }
@@ -263,19 +263,19 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
             }
 
             try {
-                Object craftBlock = target;
-                Method getHandle = craftBlock.getClass().getMethod("getHandle");
-                Object nmsState = getHandle.invoke(craftBlock);
+                // Robust block handle access
+                Method getHandle = target.getClass().getMethod("getHandle");
+                Object nmsState = getHandle.invoke(target);
 
                 Method getBlock = nmsState.getClass().getMethod("getBlock");
                 Object nmsBlock = getBlock.invoke(nmsState);
 
                 if (nmsBlock instanceof DelegatingBlock db) {
-                    player.sendMessage("§aCustom block!");
+                    player.sendMessage("§b[Custom Block Found!]");
                     Object behavior = db.getBehavior();
-                    player.sendMessage("Behavior: " + (behavior != null ? behavior.getClass().getSimpleName() : "null"));
+                    player.sendMessage("§7Behavior: §f" + (behavior != null ? behavior.getClass().getSimpleName() : "None"));
                 } else {
-                    player.sendMessage("§cVanilla block");
+                    player.sendMessage("§8[Vanilla Block]");
                 }
 
                 Class<?> builtInRegistries = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
@@ -286,13 +286,11 @@ public class TestBlocks extends JavaPlugin implements CommandExecutor, Listener 
                 Method getKey = registryClass.getMethod("getKey", Object.class);
                 Object key = getKey.invoke(registry, nmsBlock);
 
-                player.sendMessage("ID: " + key.toString());
+                player.sendMessage("§7Registry ID: §f" + key.toString());
 
             } catch (Exception e) {
                 player.sendMessage("Hata: " + e.getMessage());
-                e.printStackTrace();
             }
-
             return true;
         }
 

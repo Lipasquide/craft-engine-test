@@ -1,20 +1,30 @@
 package me.testblocks.network;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VisualMappingManager {
-    private static final Map<Integer, Integer> customToVanilla = new ConcurrentHashMap<>();
+    private static final Map<Integer, Integer> global = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<Integer, Integer>> perPlayer = new ConcurrentHashMap<>();
 
-    public static void registerMapping(int customId, int vanillaId) {
-        customToVanilla.put(customId, vanillaId);
+    public static void register(int custom, int vanilla) {
+        global.put(custom, vanilla);
     }
 
-    public static int getMappedId(int customId) {
-        return customToVanilla.getOrDefault(customId, customId);
+    public static int get(UUID player, int id) {
+        if (player != null && perPlayer.containsKey(player)) {
+            return perPlayer.get(player).getOrDefault(id, id);
+        }
+        return global.getOrDefault(id, id);
     }
 
-    public static Map<Integer, Integer> getMappings() {
-        return customToVanilla;
+    public static void registerForPlayer(UUID uuid, int custom, int vanilla) {
+        perPlayer.computeIfAbsent(uuid, k -> new ConcurrentHashMap<>())
+                 .put(custom, vanilla);
+    }
+
+    public static void removePlayer(UUID uuid) {
+        perPlayer.remove(uuid);
     }
 }
