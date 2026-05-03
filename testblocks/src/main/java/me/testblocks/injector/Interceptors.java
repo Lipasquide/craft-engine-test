@@ -103,4 +103,30 @@ public class Interceptors {
             superMethod.run();
         }
     }
+
+    public static class PhysicsInterceptor {
+        @RuntimeType
+        public static float getFriction(@This Object thisObj, @SuperCall Callable<Float> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            return (behavior instanceof BlockBehavior) ? ((BlockBehavior) behavior).getFriction() : superMethod.call();
+        }
+
+        @RuntimeType
+        public static float getExplosionResistance(@This Object thisObj, @SuperCall Callable<Float> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            return (behavior instanceof BlockBehavior) ? ((BlockBehavior) behavior).getExplosionResistance() : superMethod.call();
+        }
+
+        @RuntimeType
+        public static float getJumpFactor(@This Object thisObj, @SuperCall Callable<Float> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            return (behavior instanceof BlockBehavior) ? ((BlockBehavior) behavior).getJumpFactor() : superMethod.call();
+        }
+
+        @RuntimeType
+        public static float getSpeedFactor(@This Object thisObj, @SuperCall Callable<Float> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            return (behavior instanceof BlockBehavior) ? ((BlockBehavior) behavior).getSpeedFactor() : superMethod.call();
+        }
+    }
 }

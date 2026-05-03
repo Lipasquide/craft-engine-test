@@ -32,4 +32,10 @@ public interface BlockBehavior {
 
     default void randomTick(Object blockState, Object serverLevel, Object blockPos, Object randomSource) {
     }
+
+    // Physics
+    default float getFriction() { return 0.6f; }
+    default float getExplosionResistance() { return 0.0f; }
+    default float getSpeedFactor() { return 1.0f; }
+    default float getJumpFactor() { return 1.0f; }
 }
