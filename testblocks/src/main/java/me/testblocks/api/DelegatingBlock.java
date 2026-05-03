@@ -1,9 +1,10 @@
 package me.testblocks.api;
 
-/**
- * Basic interface for our delegating block.
- */
+import me.testblocks.util.ObjectHolder;
+
 public interface DelegatingBlock {
-    Object getBehavior();
-    void setBehavior(Object behavior);
+    ObjectHolder<BlockBehavior> behaviorDelegate();
+    ObjectHolder<BlockShape> shapeDelegate();
+    boolean isNoteBlock();
+    boolean isTripwire();
 }
