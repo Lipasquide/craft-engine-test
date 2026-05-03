@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 )
 public class CekilisPlugin implements SimpleCommand {
 
-    private static final String DISCORD_LINK = "https://discord.gg/SENIN_LINKIN";
+    private static final String DISCORD_LINK = "https://discord.gg/AV3xXubfBf";
     private static final String LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
     private static final Pattern DURATION_PATTERN =
             Pattern.compile("^(\\d+)\\s*(saniye|sn|s|dakika|dk|saat|sa|gun|gün|g)$");
