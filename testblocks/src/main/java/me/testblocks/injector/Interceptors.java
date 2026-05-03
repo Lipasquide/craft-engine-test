@@ -8,6 +8,7 @@ import net.bytebuddy.implementation.bind.annotation.SuperCall;
 import net.bytebuddy.implementation.bind.annotation.This;
 
 import java.util.concurrent.Callable;
+import java.util.List;
 
 public class Interceptors {
 
@@ -20,6 +21,86 @@ public class Interceptors {
                 if (shape != null) return shape;
             }
             return superMethod.call();
+        }
+    }
+
+    public static class UseInterceptor {
+        @RuntimeType
+        public static Object intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<Object> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                Object result = ((BlockBehavior) behavior).use(args[0], args[1], args[2], args[3], args[4], args[5]);
+                if (result != null) return result;
+            }
+            return superMethod.call();
+        }
+    }
+
+    public static class OnPlaceInterceptor {
+        @RuntimeType
+        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                ((BlockBehavior) behavior).onPlace(args[0], args[1], args[2], args[3], (boolean)args[4]);
+            }
+            superMethod.run();
+        }
+    }
+
+    public static class NeighborChangedInterceptor {
+        @RuntimeType
+        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                ((BlockBehavior) behavior).neighborChanged(args[0], args[1], args[2], args[3], args[4], (boolean)args[5]);
+            }
+            superMethod.run();
+        }
+    }
+
+    public static class GetDropsInterceptor {
+        @RuntimeType
+        public static List<Object> intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<List<Object>> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                List<Object> drops = ((BlockBehavior) behavior).getDrops(args[0], args[1]);
+                if (drops != null) return drops;
+            }
+            return superMethod.call();
+        }
+    }
+
+    public static class GetSoundTypeInterceptor {
+        @RuntimeType
+        public static Object intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Callable<Object> superMethod) throws Exception {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                Object sound = ((BlockBehavior) behavior).getSoundType(args[0]);
+                if (sound != null) return sound;
+            }
+            return superMethod.call();
+        }
+    }
+
+    public static class TickInterceptor {
+        @RuntimeType
+        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                ((BlockBehavior) behavior).tick(args[0], args[1], args[2], args[3]);
+            }
+            superMethod.run();
+        }
+    }
+
+    public static class RandomTickInterceptor {
+        @RuntimeType
+        public static void intercept(@This Object thisObj, @AllArguments Object[] args, @SuperCall Runnable superMethod) {
+            Object behavior = ((DelegatingBlock) thisObj).getBehavior();
+            if (behavior instanceof BlockBehavior) {
+                ((BlockBehavior) behavior).randomTick(args[0], args[1], args[2], args[3]);
+            }
+            superMethod.run();
         }
     }
 }
